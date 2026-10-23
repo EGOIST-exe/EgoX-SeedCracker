@@ -1,0 +1,2 @@
+# EgoX-SeedCracker
+by EGOIST
