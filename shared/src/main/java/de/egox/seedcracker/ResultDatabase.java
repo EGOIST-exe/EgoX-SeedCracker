@@ -103,7 +103,7 @@ public final class ResultDatabase {
                 payload.addProperty("token", config.uploadToken);
                 payload.add("record", EgoXConfig.JSON.toJsonTree(record));
                 HttpRequest request = HttpRequest.newBuilder(endpoint).timeout(Duration.ofSeconds(20))
-                    .header("Content-Type", "application/json; charset=utf-8").header("User-Agent", "EgoX-SeedCracker/0.6.1")
+                    .header("Content-Type", "application/json; charset=utf-8").header("User-Agent", "EgoX-SeedCracker/0.7.0")
                     .POST(HttpRequest.BodyPublishers.ofString(payload.toString())).build();
                 var response = HTTP.send(request, HttpResponse.BodyHandlers.ofString());
                 var body = JsonParser.parseString(response.body()).getAsJsonObject();

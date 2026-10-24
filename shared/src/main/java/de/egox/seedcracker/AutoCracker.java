@@ -10,12 +10,12 @@ public final class AutoCracker {
     private static volatile boolean running, stop;
     private static volatile String status = "Automatik: sammelt Strukturstarts";
     public static final CrackProgress PROGRESS = new CrackProgress();
-    private static volatile long revision;
+    private static volatile long revision, cancellationGeneration;
     private static long attemptedRevision = -1;
     private static long startAfter;
 
     public static synchronized void observationsChanged() { revision++; startAfter = System.nanoTime() + 2_000_000_000L; }
-    public static void stop() { stop = true; }
+    public static synchronized void stop() { stop = true; cancellationGeneration++; }
     public static synchronized void resume() { stop = false; attemptedRevision = -1; }
     public static boolean running() { return running; }
     public static boolean paused() { return stop || !EgoXConfig.get().autoCrack; }
@@ -25,10 +25,10 @@ public final class AutoCracker {
     public static synchronized void newSession() { stop = false; attemptedRevision = -1; revision = 0; PROGRESS.reset(); AutomaticBiomes.reset(); status = "Automatik: sammelt Strukturstarts"; }
 
     public static synchronized void tick() {
-        if (SessionLibrary.loading() || running || PillarCracker.running() || stop || !EgoXConfig.get().autoCrack || EgoXSession.knownSeed() != null || revision == attemptedRevision
+        if (SessionLibrary.loading() || running || AutoBedrockCracker.running() || PillarCracker.running() || stop || !EgoXConfig.get().autoCrack || EgoXSession.knownSeed() != null || revision == attemptedRevision
             || System.nanoTime() < startAfter || EgoXSession.context().server().isEmpty()) return;
         if (EgoXSession.job != null && EgoXSession.job.snapshot().state() == SearchJob.State.RUNNING) return;
-        var all = EgoXSession.structures();
+        var all = EgoXSession.crackingStructures();
         var linear = all.stream().filter(o -> ObservationBits.liftable(o.placement())).toList();
         double bits = ObservationBits.summarize(linear).liftingBits();
         if (bits < 44 || linear.size() < 5) { status = "Automatik: mindestens 5 unabhaengige lineare Starts und 44 Platzierungsbits benoetigt (aktuell " + String.format(Locale.ROOT, "%.1f", bits) + ")"; return; }
@@ -37,6 +37,7 @@ public final class AutoCracker {
         PROGRESS.reset();
         long epoch = EgoXSession.context().epoch();
         long searchRevision = revision;
+        long generation = cancellationGeneration;
         Long hash = EgoXSession.context().hash();
         var biomeSamples = EgoXSession.biomes();
         var bedrockSamples = BlockEvidence.bedrock(); var oreSamples = BlockEvidence.ores();
@@ -61,11 +62,11 @@ public final class AutoCracker {
                 final String prefix = "Gruppe " + (attempt + 1) + "/" + groups.size() + ": ";
                 status = "Automatik: " + prefix + (attempt == 0 ? "alle Starts" : scope.getFirst().placement().id());
                 var candidates = LiftingSearch.search(constraints, 0, LegacyRandom.MASK, workers,
-                    () -> stop || epoch != EgoXSession.context().epoch(), () -> {
+                    () -> stop || generation != cancellationGeneration || epoch != EgoXSession.context().epoch(), () -> {
                         var random = new LegacyRandom();
                         return seed -> { for (var o : scope) if (!o.matches(seed, saltSnapshot.get(o.placement()), random)) return false; return true; };
                     }, (phase, done, total) -> PROGRESS.update(prefix + phase, done, total));
-                if (stop || epoch != EgoXSession.context().epoch()) { status = "Automatik: abgebrochen"; return; }
+                if (stop || generation != cancellationGeneration || epoch != EgoXSession.context().epoch()) { status = "Automatik: abgebrochen"; return; }
                 status = "Automatik: " + candidates.size() + " Struktur-Seed-Kandidaten";
                 EgoXSession.say(status);
                 if (candidates.isEmpty()) continue;
@@ -73,26 +74,26 @@ public final class AutoCracker {
                 if (hash == null) { EgoXSession.say("Kein Server-Seed-Hash vorhanden; Kandidaten fuer Biom-Fallback gesammelt."); continue; }
                 status = "Automatik: prueft obere 16 Welt-Seed-Bits gegen Server-Hash";
                 var lifted = WorldSeedLifting.search(candidates, 0, 65535, workers, 256, () -> seed -> SeedHash.of(seed) == hash,
-                    () -> stop || epoch != EgoXSession.context().epoch(), PROGRESS::update, prefix + "4/4 Welt-Seed-Hash pruefen");
-                if (stop || epoch != EgoXSession.context().epoch()) return;
+                    () -> stop || generation != cancellationGeneration || epoch != EgoXSession.context().epoch(), PROGRESS::update, prefix + "4/4 Welt-Seed-Hash pruefen");
+                if (stop || generation != cancellationGeneration || epoch != EgoXSession.context().epoch()) return;
                 if (lifted.state() != SearchJob.State.COMPLETE) throw new IllegalStateException("Hash-Suche " + lifted.state() + ": " + lifted.error());
                 var worldSeeds = lifted.seeds();
                 if (worldSeeds.size() == 1) {
-                    FeatureEvidence.verify(worldSeeds.getFirst(), () -> stop || epoch != EgoXSession.context().epoch());
-                    AutomaticBiomes.verify(worldSeeds.getFirst(), biomeSamples, biomePreset, () -> stop || epoch != EgoXSession.context().epoch());
-                    if (stop || epoch != EgoXSession.context().epoch()) return;
+                    FeatureEvidence.verify(worldSeeds.getFirst(), () -> stop || generation != cancellationGeneration || epoch != EgoXSession.context().epoch());
+                    AutomaticBiomes.verify(worldSeeds.getFirst(), biomeSamples, biomePreset, () -> stop || generation != cancellationGeneration || epoch != EgoXSession.context().epoch());
+                    if (stop || generation != cancellationGeneration || epoch != EgoXSession.context().epoch()) return;
                     EgoXSession.acceptWorldSeed(worldSeeds.iterator().next(), "AUTOMATIC_STRUCTURES_AND_HASH");
                     status = "Automatik: Welt-Seed bestaetigt";
                     return;
                 } else { status = "Automatik: " + worldSeeds.size() + " passende Welt-Seeds"; EgoXSession.say(status); }
                 }
-                if (stop || epoch != EgoXSession.context().epoch()) return;
+                if (stop || generation != cancellationGeneration || epoch != EgoXSession.context().epoch()) return;
                 status = EgoXConfig.get().autoBiomes ? "Automatik: Biom-Fallback fuer vorhandene 48-Bit-Kandidaten" : "Automatik: Feature-Abgleich vorhandener 48-Bit-Kandidaten";
                 if ((useBedrock || useOres || useGeodes || useDungeon) && !EgoXConfig.get().autoBiomes) FeatureEvidence.fallback(fallback, bedrockSamples, oreSamples, featureSamples, useBedrock, useOres, useGeodes, dungeons, useDungeon, hash, workers,
-                    () -> stop || epoch != EgoXSession.context().epoch() || revision != searchRevision, PROGRESS);
+                    () -> stop || generation != cancellationGeneration || epoch != EgoXSession.context().epoch() || revision != searchRevision, PROGRESS);
                 AutomaticBiomes.fallback(fallback, biomeSamples, biomePreset, hash, workers,
-                    () -> stop || epoch != EgoXSession.context().epoch() || revision != searchRevision, PROGRESS);
-                if (stop || epoch != EgoXSession.context().epoch()) return;
+                    () -> stop || generation != cancellationGeneration || epoch != EgoXSession.context().epoch() || revision != searchRevision, PROGRESS);
+                if (stop || generation != cancellationGeneration || epoch != EgoXSession.context().epoch()) return;
                 status = revision != searchRevision ? "Automatik: neue Strukturstarts; Suche wird mit neuen Daten wiederholt"
                     : "Automatik: kein Hash-bestaetigter Welt-Seed. " + (EgoXConfig.get().autoBiomes ? AutomaticBiomes.report().detail() : FeatureEvidence.report().detail());
                 EgoXSession.say(status);

@@ -16,7 +16,9 @@ public final class EgoXConfig {
     public boolean autoOres = false;
     public boolean bedrockChecker = true;
     public boolean geodeChecker = true;
-    public boolean dungeonChecker = true;
+    public boolean dungeonChecker = false;
+    public boolean autoNetherBedrock = true;
+    public java.util.Set<String> disabledCrackingStructures = CrackingStructures.defaults();
     public boolean hud = false;
     public HudSettings hudStyle = new HudSettings();
     public int displayRevision = ConfigMigration.DISPLAY_REVISION;
@@ -54,6 +56,8 @@ public final class EgoXConfig {
             if (next == null) throw new IllegalArgumentException("Empty configuration");
             if (next.hudStyle == null) next.hudStyle = new HudSettings();
             next.hudStyle.validate();
+            if (next.disabledCrackingStructures == null || next.disabledCrackingStructures.stream().anyMatch(java.util.Objects::isNull))
+                throw new IllegalArgumentException("disabledCrackingStructures must be an array of placement IDs");
             if (next.disabledOutlineTypes == null || next.disabledOutlineTypes.stream().anyMatch(java.util.Objects::isNull))
                 throw new IllegalArgumentException("disabledOutlineTypes must be an array of type IDs");
             if (next.workers < 1 || next.workers > 64 || next.maxBiomeSamples < 16 || next.maxBiomeSamples > 16384

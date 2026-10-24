@@ -49,6 +49,7 @@ public final class EgoXSession {
         AutoCracker.stop();
         AutoSaltCracker.pause();
         PillarCracker.reset(); EndPillarFinder.clear();
+        AutoBedrockCracker.reset();
         structures.clear(); biomes.clear(); salts.clear(); knownWorldSeed = null;
         AutomaticBiomes.reset();
         BlockEvidence.clear();
@@ -62,6 +63,9 @@ public final class EgoXSession {
     public static List<StructureObservation> structures() {
         return structures.stream().sorted(Comparator.comparing((StructureObservation s) -> s.placement().id())
             .thenComparingInt(StructureObservation::chunkX).thenComparingInt(StructureObservation::chunkZ)).toList();
+    }
+    public static List<StructureObservation> crackingStructures() {
+        return CrackingStructures.filter(structures(), EgoXConfig.get().disabledCrackingStructures);
     }
     public static synchronized List<BiomeObservation> biomes() {
         // Different biomes first: rejecting wrong candidates early saves native-noise evaluations.
@@ -86,7 +90,11 @@ public final class EgoXSession {
             }
         }
         var observation = new StructureObservation(profile, chunkX, chunkZ, context.dimension());
-        if (structures.add(observation)) { SessionLibrary.event("STRUCTURE_START", observation); AutoCracker.observationsChanged(); return true; }
+        if (structures.add(observation)) {
+            SessionLibrary.event("STRUCTURE_START", observation);
+            if (!EgoXConfig.get().disabledCrackingStructures.contains(profile.id())) AutoCracker.observationsChanged();
+            return true;
+        }
         return false;
     }
     public static synchronized void observeChunk(Level world, int chunkX, int chunkZ) {

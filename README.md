@@ -11,7 +11,7 @@ Lizenz: [MIT](LICENSE) · Copyright © 2026 EGOIST-exe.
 ## Installation
 
 1. Fabric Loader und die passende Fabric API für deine Minecraft-Version installieren.
-2. Genau eine passende `EgoX-SeedCracker-0.6.1+<Minecraft-Version>.jar` aus `dist/` in den `mods`-Ordner legen. Vorherige SeedCracker-JARs dabei ersetzen.
+2. Genau eine passende `EgoX-SeedCracker-0.7.0+<Minecraft-Version>.jar` aus `dist/` in den `mods`-Ordner legen. Vorherige SeedCracker-JARs dabei ersetzen.
 3. Minecraft starten und eine Welt betreten. `/egox` zeigt die Befehle.
 
 Minecraft 1.21.11 benötigt Java 21 oder neuer. Die 26.3-Fassung benötigt Java 25 oder neuer.
@@ -28,7 +28,11 @@ Minecraft 1.21.11 benötigt Java 21 oder neuer. Die 26.3-Fassung benötigt Java 
 
 Änderungen werden beim Verlassen der Oberfläche gespeichert. Tab/Enter und die native Slider-Tastaturbedienung bleiben nutzbar; Esc speichert und kehrt zurück. Die lokale Bibliothek und vorhandene Beobachtungen bleiben beim Umschalten der Module erhalten. Das Logo in `branding/logo_white.png` ist das unverändert übernommene Projektlogo; `scripts/create-icon.py` kopiert dieselbe PNG in beide Varianten.
 
-Seit 0.6.1 werden Dungeon-Funde ohne einzelne Chat-Nachrichten erfasst. Im HUD-Fußtext und unter `/egox db bits` steht die zusammengefasste Anzahl mit theoretischen **Muster-Bits**. Diese Bedingungen ergänzen die Welt-Seed-Kandidatenprüfung; das Struktur-Lifting-Ziel bleibt separat. Die missverständliche `+0 Lifting-Bits`-Anzeige an Dungeon-Funden entfällt. Speicherung, Restore und Kandidatenprüfung bleiben aktiv.
+Seit 0.7.0 ist die Dungeon-Musterprüfung auch nach einem Update standardmäßig **OFF**. Spawner bleiben sichtbar und werden lokal gespeichert, starten aber keine erneute Struktursuche. Auch bei manuell eingeschaltetem Dungeon-Checker lösen neue Bodenmuster keine vollständige Struktur-Rekonstruktion aus.
+
+Der automatische **Nether-Bedrock-Cracker** ist unabhängig von Strukturstarts und Struktur-Salts. Er sammelt Bedrock auf den seltenen Schichten **Y=4** und **Y=123**. Ab je **128 Positionen aus mindestens vier Chunks pro Schicht** durchsucht er den vollständigen 48-Bit-Positions-RNG, kehrt die RNG-Schritte um und prüft Boden und Decke gemeinsam. Anschließend werden alle oberen 16 Bits am Server-Hash geprüft. Fortschritt: `/egox cracker bedrock status` oder HUD. Schalter: `/egox cracker nether ON|OFF`; erneuter Versuch: `/egox cracker nether retry`; Abbruch: `/egox stop`. Ein erfolgloser Versuch wiederholt sich nicht durch neue Spawner. Die CPU-Suche kann lange dauern; es gibt noch keinen Ingame-Geschwindigkeitsbenchmark oder GPU-Pfad. Bei Abbruch startet ein erneuter Versuch von vorne. Ohne passenden Server-Hash bleiben Ergebnisse unbestätigt und werden nicht hochgeladen. Veränderte oder gefälschte Bedrock-Muster können die Suche scheitern lassen.
+
+Unter `/egox settings` > **Strukturen** lässt sich jede Random-Spread-Placement-Familie für Seed- und Salt-Suchen ausschalten. Alternativ: `/egox cracker structures trial_chambers OFF` und `/egox cracker structures list`. **Trial Chambers sind dort standardmäßig OFF**. Die Auswahl gilt auch für gespeicherte Beobachtungen, manuelle Struktursuchen, End-Suchen und die automatische Salt-Suche. Rohdaten und Outlines bleiben erhalten; die sichtbaren Struktur-Bits zählen nur eingeschaltete Familien. Typen, die dieselbe Placement-Familie verwenden (etwa Dorfvarianten), werden gemeinsam geschaltet. Änderungen brechen laufende Struktursuchen ab, bevor die neue Auswahl verwendet wird. Trial-Chamber-Vorlagen verlangen zusätzlich bis zu 256 räumlich verteilte stabile Blöcke und bis zu 24 erwartete Innenraum-Luftblöcke. Fehlende Chunks gelten als unbekannt. Eine clientseitige Blockansicht kann die natürliche Herkunft einer identischen nachgebauten Struktur dennoch nicht beweisen.
 
 ## Was die Mod bereits kann
 

@@ -108,6 +108,8 @@ class ObservabilityTest {
                 "egox cracker bedrock ON", "egox cracker bedrock OFF", "egox cracker bedrock search -100 100", "egox cracker bedrock status",
                 "egox cracker geode ON", "egox cracker geode OFF", "egox cracker geode status", "egox cracker geode search -100 100",
                 "egox cracker dungeon ON", "egox cracker dungeon OFF", "egox cracker dungeon status", "egox cracker dungeon search -100 100",
+                "egox cracker nether ON", "egox cracker nether OFF", "egox cracker nether status", "egox cracker nether retry",
+                "egox cracker structures list", "egox cracker structures trial_chambers OFF", "egox cracker structures minecraft:trial_chambers ON",
                 "egox db ores", "egox db library", "egox db library list", "egox db library open", "egox db library save", "egox db library restore", "egox settings", "egox gui")) {
             var parsed = dispatcher.parse(command, null);
             assertTrue(parsed.getExceptions().isEmpty(), command); assertFalse(parsed.getReader().canRead(), command);
@@ -296,7 +298,9 @@ class ObservabilityTest {
                 if (variant.type().equals("minecraft:shipwreck")) assertTrue(NativeTemplateFinder.detect(anchor, blocks.get(anchor), variant.dimension(), p -> blocks.getOrDefault(p, Blocks.AIR)).stream()
                     .anyMatch(h -> h.type().equals("minecraft:shipwreck") && h.chunkX() == -10 && h.chunkZ() == -19), "Indexed shipwreck detection: " + key);
                 assertTrue(hit.box().contains(anchor.getX() + .5, anchor.getY() + .5, anchor.getZ() + .5), key);
-                blocks.remove(origin.offset(variant.marks().getLast().pos()));
+                // Filling expected air must fail just as removing a required solid block does.
+                var damaged=variant.marks().getLast();
+                blocks.put(origin.offset(damaged.pos()),damaged.block()==Blocks.AIR?Blocks.STONE:Blocks.AIR);
                 assertTrue(variant.detect(anchor, p -> blocks.getOrDefault(p, Blocks.AIR)).isEmpty(), key);
             }
         }

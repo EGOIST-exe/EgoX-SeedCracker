@@ -14,11 +14,11 @@ public final class AutoSaltCracker {
     public static void newSession() { paused = false; attempted.clear(); }
 
     public static void tick() {
-        if (SessionLibrary.loading() || paused || !EgoXConfig.get().autoSaltCrack || AutoCracker.running() || PillarCracker.running() || EgoXSession.knownSeed() == null) return;
+        if (SessionLibrary.loading() || paused || !EgoXConfig.get().autoSaltCrack || AutoCracker.running() || AutoBedrockCracker.running() || PillarCracker.running() || EgoXSession.knownSeed() == null) return;
         if (EgoXSession.job != null && EgoXSession.job.snapshot().state() == SearchJob.State.RUNNING) return;
         long seed = EgoXSession.knownSeed();
         var groups = new TreeMap<String, List<StructureObservation>>();
-        EgoXSession.structures().forEach(o -> groups.computeIfAbsent(o.placement().id(), k -> new ArrayList<>()).add(o));
+        EgoXSession.crackingStructures().forEach(o -> groups.computeIfAbsent(o.placement().id(), k -> new ArrayList<>()).add(o));
         for (var group : groups.entrySet()) {
             var samples = group.getValue();
             if (samples.size() < 5) continue;

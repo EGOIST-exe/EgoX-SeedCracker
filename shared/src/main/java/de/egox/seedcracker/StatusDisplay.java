@@ -19,7 +19,7 @@ public final class StatusDisplay {
     public static void tick() { if ((EgoXConfig.get().hud || SettingsAccess.editingHud()) && System.nanoTime() >= refresh) { refresh = System.nanoTime() + 250_000_000; update(); } }
     public static List<String> lines() { return lines; }
     public static void update() {
-        var bits = ObservationBits.summarize(EgoXSession.structures());
+        var bits = ObservationBits.summarize(EgoXSession.crackingStructures());
         var next = new ArrayList<String>();
         next.add("EgoX  |  Seed " + (AutoCracker.paused() ? "OFF" : "ON") + "  Salt " + (AutoSaltCracker.paused() ? "OFF" : "ON"));
         next.add(String.format(Locale.ROOT, "%d Starts | ~%.1f Platzierungsbits | %d Biom-Samples", bits.starts(), bits.placementBits(), EgoXSession.biomes().size()));
@@ -29,7 +29,10 @@ public final class StatusDisplay {
         next.add(SessionLibrary.status());
         next.add(FeatureEvidence.status());
         next.add(DungeonEvidence.status());
-        if (PillarCracker.running() && (EgoXSession.job == null || EgoXSession.job.snapshot().state() != SearchJob.State.RUNNING)) {
+        next.add(AutoBedrockCracker.status());
+        if (AutoBedrockCracker.running()) {
+            var p=AutoBedrockCracker.PROGRESS.snapshot(); fraction=p.fraction(); next.add(p.phase()); addWork(next,p.checked(),p.total(),p.seconds());
+        } else if (PillarCracker.running() && (EgoXSession.job == null || EgoXSession.job.snapshot().state() != SearchJob.State.RUNNING)) {
             var p = PillarCracker.PROGRESS.snapshot(); fraction = p.fraction(); next.add(p.phase()); addWork(next, p.checked(), p.total(), p.seconds());
         } else if (AutoCracker.running()) {
             var p = AutoCracker.PROGRESS.snapshot();
@@ -57,6 +60,7 @@ public final class StatusDisplay {
         String modes = "Seed " + (AutoCracker.paused() ? "OFF" : "ON") + " / Salt " + (AutoSaltCracker.paused() ? "OFF" : "ON");
         String stats = String.format(Locale.ROOT, "%d Starts | ~%.1f Bits | %d Biome", bits.starts(), bits.placementBits(), EgoXSession.biomes().size());
         var job = EgoXSession.job == null ? null : EgoXSession.job.snapshot();
+        if (AutoBedrockCracker.running()) { var p=AutoBedrockCracker.PROGRESS.snapshot(); return activeModel(modes,stats,p.phase(),p.checked(),p.total(),p.seconds()); }
         if (PillarCracker.running() && (job == null || job.state() != SearchJob.State.RUNNING)) {
             var p = PillarCracker.PROGRESS.snapshot(); return activeModel(modes, stats, p.phase(), p.checked(), p.total(), p.seconds());
         }
@@ -67,7 +71,7 @@ public final class StatusDisplay {
         String biomeDetail = EgoXConfig.get().autoBiomes && !AutomaticBiomes.report().state().equals("BEREIT")
             ? "Biom: " + AutomaticBiomes.report().state() + " | /egox db biomes" : "Theoretische Bits | /egox cracker status";
         var dungeons = DungeonEvidence.snapshot();
-        if (!dungeons.isEmpty()) biomeDetail = DungeonEvidence.summarize(dungeons).compact();
+        if (EgoXConfig.get().dungeonChecker && !dungeons.isEmpty()) biomeDetail = DungeonEvidence.summarize(dungeons).compact();
         return new GlassHud.Model(AutoCracker.paused() ? "PAUSE" : "SAMMELT", modes, stats, "Lifting-Daten | " + bits.liftingStarts() + "/5 Starts",
             String.format(Locale.ROOT, "%.1f/44", bits.liftingBits()), biomeDetail, Math.min(1, bits.liftingBits() / 44));
     }

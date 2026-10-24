@@ -27,6 +27,7 @@ public final class EgoX implements ClientModInitializer {
             EndPillarFinder.tick(client);
             AutoCracker.tick();
             PillarCracker.tick();
+            AutoBedrockCracker.tick();
             AutoSaltCracker.tick();
             FinderMarkers.tick(client);
             StatusDisplay.tick();

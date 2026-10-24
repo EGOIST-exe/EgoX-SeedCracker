@@ -27,6 +27,16 @@ public final class EgoXCommands {
             .then(literal("status").executes(c -> run(EgoXCommands::status)))
             .then(literal("cracker")
                 .executes(c -> run(EgoXCommands::status))
+                .then(literal("structures")
+                    .then(literal("list").executes(c -> run(() -> CrackingStructures.types().forEach(id->say(id+": "+(CrackingStructures.enabled(id)?"ON":"OFF"))))))
+                    .then(argument("type",new StructureIdArgument()).suggests((c,b)->{CrackingStructures.types().forEach(b::suggest);return b.buildFuture();})
+                        .then(argument("state",new OnOffArgument()).executes(c->run(()->{
+                            String id=CrackingStructures.resolve(getString(c,"type"));boolean enabled=c.getArgument("state",Boolean.class);
+                            CrackingStructures.set(id,enabled);say("Cracken mit "+id+": "+(enabled?"ON":"OFF")+"; Rohdaten und Outlines bleiben erhalten.");
+                        })))))
+                .then(toggle("nether",CrackerControl::netherBedrock)
+                    .then(literal("status").executes(c->run(AutoBedrockCracker::describe)))
+                    .then(literal("retry").executes(c->run(AutoBedrockCracker::retry))))
                 .then(toggle("seed", CrackerControl::seed).then(literal("status").executes(c -> run(EgoXCommands::status))))
                 .then(toggle("salt", CrackerControl::salt).then(literal("status").executes(c -> run(EgoXCommands::status))))
                 .then(toggle("dungeon", CrackerControl::dungeon)
@@ -37,7 +47,7 @@ public final class EgoXCommands {
                     .then(literal("search").then(argument("min", longArg()).then(argument("max", longArg()).executes(c -> run(() -> crackEvidence(c, true, false))))))
                     .then(literal("feature").then(argument("min", longArg()).then(argument("max", longArg()).executes(c -> run(() -> crackEvidence(c, true, true)))))))
                 .then(toggle("bedrock", CrackerControl::bedrock)
-                    .then(literal("status").executes(c -> run(FeatureEvidence::describe)))
+                    .then(literal("status").executes(c -> run(()->{FeatureEvidence.describe();AutoBedrockCracker.describe();})))
                     .then(literal("search").then(argument("min", longArg()).then(argument("max", longArg()).executes(c -> run(() -> crackEvidence(c, false, false)))))))
                 .then(toggle("geode",CrackerControl::geode)
                     .then(literal("status").executes(c->run(FeatureEvidence::describe)))
@@ -67,7 +77,7 @@ public final class EgoXCommands {
             .then(toggle("finder", enabled -> { EgoXConfig.get().finder = enabled; EgoXConfig.save(); say("Finder: " + enabled); })
                 .then(literal("list").executes(c -> run(() -> StructureScanner.describe().forEach(EgoXCommands::say))))
                 .then(literal("rescan").executes(c -> run(() -> say("Geladene Chunks eingeplant: " + StructureScanner.rescan())))))
-            .then(literal("stop").executes(c -> run(() -> { if (EgoXSession.job != null) EgoXSession.job.cancel(); AutoCracker.stop(); PillarCracker.stop(); AutoSaltCracker.pause(); say("Suchabbruch angefordert. Weiter mit /egox resume."); })))
+            .then(literal("stop").executes(c -> run(() -> { if (EgoXSession.job != null) EgoXSession.job.cancel(); AutoCracker.stop(); PillarCracker.stop(); AutoBedrockCracker.stop(); AutoSaltCracker.pause(); say("Suchabbruch angefordert. Weiter mit /egox resume."); })))
             .then(literal("resume").executes(c -> run(() -> { CrackerControl.seed(true); CrackerControl.salt(true); })))
             .then(literal("reload").executes(c -> run(() -> { EgoXConfig.reload(); say("Konfiguration geladen."); })))
             .then(literal("export").executes(c -> run(EgoXCommands::export)))
@@ -150,7 +160,7 @@ public final class EgoXCommands {
     private static void ensureIdle() {
         if (EgoXSession.job != null && EgoXSession.job.snapshot().state() == SearchJob.State.RUNNING)
             throw new IllegalStateException("Eine Suche laeuft bereits. /egox stop");
-        if (AutoCracker.running() || PillarCracker.running()) throw new IllegalStateException("Automatische Suche laeuft. Zuerst /egox stop und Abschluss abwarten.");
+        if (AutoCracker.running() || AutoBedrockCracker.running() || PillarCracker.running()) throw new IllegalStateException("Automatische Suche laeuft. Zuerst /egox stop und Abschluss abwarten.");
     }
     private static void launch(String label, long start, long count, Supplier<LongPredicate> factory, java.util.function.LongUnaryOperator decode, boolean worldSeeds) {
         ensureIdle();
@@ -181,7 +191,7 @@ public final class EgoXCommands {
         say(ResultDatabase.status());
     }
     private static void bits() {
-        var bits = ObservationBits.summarize(EgoXSession.structures());
+        var bits = ObservationBits.summarize(EgoXSession.crackingStructures());
         say(String.format(Locale.ROOT, "~%.2f Platzierungsbits; ~%.2f Lifting-Bits aus %d Starts. Ziel: >=44 Lifting-Bits und >=5 geeignete Starts.", bits.placementBits(), bits.liftingBits(), bits.starts()));
         bits.families().forEach((type, value) -> say(String.format(Locale.ROOT, "%s: ~%.2f Bits", type, value)));
         say(DungeonEvidence.status());
@@ -208,7 +218,7 @@ public final class EgoXCommands {
     }
     private static List<StructureObservation> observations(String type) {
         Placement profile = NativeProfiles.get(type);
-        var samples = EgoXSession.structures().stream().filter(o -> o.placement().id().equals(profile.id())).toList();
+        var samples = EgoXSession.crackingStructures().stream().filter(o -> o.placement().id().equals(profile.id())).toList();
         long regions = samples.stream().map(o -> Math.floorDiv(o.chunkX(), profile.spacing()) + ":" + Math.floorDiv(o.chunkZ(), profile.spacing())).distinct().count();
         if (regions < 3) throw new IllegalArgumentException("Mindestens 3 exakte Strukturstarts desselben Placement-Typs in verschiedenen Regionen noetig");
         return samples;
@@ -222,7 +232,7 @@ public final class EgoXCommands {
         }, x -> x, false);
     }
     private static void crackStructures(CommandContext<FabricClientCommandSource> c) {
-        var samples = EgoXSession.structures();
+        var samples = EgoXSession.crackingStructures();
         if (samples.size() < 3) throw new IllegalArgumentException("Mindestens 3 Strukturstarts noetig");
         var saltSnapshot = new HashMap<Placement, Long>();
         samples.forEach(o -> saltSnapshot.put(o.placement(), EgoXSession.salt(o.placement())));

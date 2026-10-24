@@ -5,7 +5,7 @@ public final class CrackerControl {
     private CrackerControl() { }
     public static void seed(boolean enabled) {
         EgoXConfig.get().autoCrack = enabled; EgoXConfig.save();
-        if (enabled) { AutoCracker.resume(); PillarCracker.reset(); } else { AutoCracker.stop(); PillarCracker.stop(); }
+        if (enabled) { AutoCracker.resume(); PillarCracker.reset(); AutoBedrockCracker.retry(); } else { AutoCracker.stop(); PillarCracker.stop(); AutoBedrockCracker.stop(); }
         EgoXSession.say("Seed-Cracker: " + (enabled ? "ON" : "OFF"));
     }
     public static void salt(boolean enabled) {
@@ -28,6 +28,11 @@ public final class CrackerControl {
     public static void bedrock(boolean enabled) {
         EgoXConfig.get().bedrockChecker = enabled; EgoXConfig.save(); if (enabled) AutoCracker.retry();
         EgoXSession.say("Bedrock-Kandidatenpruefung: " + (enabled ? "ON" : "OFF"));
+    }
+    public static void netherBedrock(boolean enabled) {
+        EgoXConfig.get().autoNetherBedrock=enabled;EgoXConfig.save();
+        if(enabled)AutoBedrockCracker.retry();else AutoBedrockCracker.stop();
+        EgoXSession.say("Automatischer Nether-Bedrock-Cracker: "+(enabled?"ON":"OFF"));
     }
     public static void geode(boolean enabled) {
         EgoXConfig.get().geodeChecker=enabled;EgoXConfig.save();if(enabled)AutoCracker.retry();

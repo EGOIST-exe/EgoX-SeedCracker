@@ -26,6 +26,8 @@ public final class BlockEvidence {
     }
     public static synchronized void bedrock(BlockPos pos, Block block) {
         String dimension = EgoXSession.context().dimension();
+        // Keep room for both rare Nether layers before frequent guaranteed-neighbour layers fill the working set.
+        if (dimension.equals("minecraft:the_nether") && (pos.getY()!=4 && pos.getY()!=123 || BEDROCK.values().stream().filter(o->o.dimension().equals(dimension)&&o.y()==pos.getY()).count()>=512)) return;
         if (BEDROCK.values().stream().filter(o -> o.dimension().equals(dimension)).count() >= 1024) return;
         var observation = observation(pos, block, "OBSERVED_BEDROCK");
         if (BEDROCK.putIfAbsent(key(observation), observation) == null) SessionLibrary.event("BEDROCK", observation);
@@ -34,9 +36,10 @@ public final class BlockEvidence {
         String dimension = EgoXSession.context().dimension();
         if (dimension.isEmpty() || BEDROCK.size() >= 2048 || BEDROCK.values().stream().filter(o -> o.dimension().equals(dimension)).count() >= 1024) return;
         int[] heights = dimension.equals("minecraft:overworld") ? new int[]{-63,-62,-61,-60}
-            : dimension.equals("minecraft:the_nether") ? new int[]{1,2,3,4,123,124,125,126} : new int[0];
+            : dimension.equals("minecraft:the_nether") ? new int[]{4,123} : new int[0];
         int cx = Platform.chunkX(chunk.getPos()) * 16, cz = Platform.chunkZ(chunk.getPos()) * 16;
-        for (int x : new int[]{2,6,10,14}) for (int z : new int[]{2,6,10,14}) for (int y : heights) {
+        int stride = dimension.equals("minecraft:the_nether") ? 1 : 4;
+        for (int x=0;x<16;x+=stride) for (int z=0;z<16;z+=stride) for (int y : heights) {
             var pos = new BlockPos(cx + x, y, cz + z);
             if (chunk.getBlockState(pos).is(net.minecraft.world.level.block.Blocks.BEDROCK)) bedrock(pos, net.minecraft.world.level.block.Blocks.BEDROCK);
         }
@@ -66,7 +69,7 @@ public final class BlockEvidence {
     public static synchronized void feature(BlockPos pos, Block block) {
         var observation = observation(pos, block, "OBSERVED_FEATURE_BLOCK");
         if (FEATURES.putIfAbsent(key(observation), observation) == null) { trim(FEATURES, 8192); SessionLibrary.event("FEATURE_BLOCK", observation); }
-        if (block != net.minecraft.world.level.block.Blocks.SPAWNER) return;
+        if (block != net.minecraft.world.level.block.Blocks.SPAWNER || !EgoXConfig.get().dungeonChecker) return;
         var level = net.minecraft.client.Minecraft.getInstance().level;
         String surveyKey = observation.dimension() + ":" + pos.asLong();
         if (level == null || SURVEYS.contains(surveyKey)) return;
@@ -79,7 +82,7 @@ public final class BlockEvidence {
         SessionLibrary.event("SPAWNER_SURVEY", Map.of("center",observation,"floorRadius",5,"floorY",pos.getY()-1,"floorBlocksXThenZ",List.copyOf(floor),"classification","UNCLASSIFIED_SPAWNER"));
     }
     public static synchronized void restore(List<BlockObservation> ores, List<BlockObservation> bedrock, long count, boolean initial) {
-        ores.forEach(o -> ORES.putIfAbsent(key(o), o)); bedrock.forEach(o -> BEDROCK.putIfAbsent(key(o), o));
+        ores.forEach(o -> ORES.putIfAbsent(key(o), o)); bedrock.stream().filter(o->!o.dimension().equals("minecraft:the_nether") || o.y()==4 || o.y()==123).forEach(o -> BEDROCK.putIfAbsent(key(o), o));
         trim(ORES, 4096); trim(BEDROCK, 2048); mined = initial ? mined + count : Math.max(mined, count);
     }
     public static synchronized void describe() {

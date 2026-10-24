@@ -41,6 +41,7 @@ public final class DungeonEvidence {
         return layouts.isEmpty() ? Optional.empty() : Optional.of(new DungeonObservation(origin.getX(), origin.getY(), origin.getZ(), layouts, Instant.now().toString()));
     }
     public static void observe(BlockPos pos) {
+        if (!EgoXConfig.get().dungeonChecker) return;
         if (!EgoXSession.context().dimension().equals("minecraft:overworld")) return;
         var level = net.minecraft.client.Minecraft.getInstance().level;
         if (level == null) return;
@@ -50,7 +51,7 @@ public final class DungeonEvidence {
         var old = ROOMS.put(room.key(), room);
         while (ROOMS.size() > 1024) ROOMS.remove(ROOMS.keySet().iterator().next());
         if (old != null && old.layouts().equals(room.layouts())) return false;
-        SessionLibrary.event("DUNGEON", room); AutoCracker.observationsChanged();
+        SessionLibrary.event("DUNGEON", room);
         return true;
     }
     public static synchronized List<DungeonObservation> snapshot() { return List.copyOf(ROOMS.values()); }

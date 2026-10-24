@@ -15,9 +15,9 @@ public final class PillarCracker {
     public static void stop() { stopped = true; if (EgoXSession.job != null && EgoXSession.job.snapshot().label().equals("Seed: End-Saeulen + Strukturen")) EgoXSession.job.cancel(); }
     public static void reset() { attempted = ""; stop(); }
     public static void tick() {
-        if (SessionLibrary.loading() || running || AutoCracker.running() || AutoCracker.paused() || EgoXSession.knownSeed() != null || EgoXSession.context().hash() == null) return;
+        if (SessionLibrary.loading() || running || AutoBedrockCracker.running() || AutoCracker.running() || AutoCracker.paused() || EgoXSession.knownSeed() != null || EgoXSession.context().hash() == null) return;
         if (EgoXSession.job != null && EgoXSession.job.snapshot().state() == SearchJob.State.RUNNING) return;
-        var pillars = EndPillarFinder.candidates(); var samples = EgoXSession.structures();
+        var pillars = EndPillarFinder.candidates(); var samples = EgoXSession.crackingStructures();
         if (pillars.isEmpty() || pillars.size() > 4 || samples.size() < 5 || ObservationBits.summarize(samples).placementBits() < 32) return;
         // Prefer the cheaper lifting path when it has enough data, but permit this fallback after it failed.
         String key = EgoXSession.context().epoch() + ":" + pillars + ':' + samples.hashCode() + ':' + EgoXSession.salts().hashCode();

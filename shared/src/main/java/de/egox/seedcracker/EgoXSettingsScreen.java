@@ -9,7 +9,7 @@ import java.util.function.*;
 
 /** Native widgets provide focus traversal, narration, slider keys and tooltips. */
 public abstract class EgoXSettingsScreen extends Screen {
-    private static final String[] TABS = {"HUD", "Module", "Outlines", "Leistung"};
+    private static final String[] TABS = {"HUD", "Module", "Outlines", "Strukturen", "Leistung"};
     private final Screen parent;
     protected final boolean editor;
     private int tab, page;
@@ -25,11 +25,11 @@ public abstract class EgoXSettingsScreen extends Screen {
         if (editor) { initEditor(); return; }
         var layout = SettingsLayout.of(width, height);
         for (int i = 0; i < TABS.length; i++) {
-            int selected = i, size = (layout.width() - 12) / 4;
+            int selected = i, size = (layout.width() - (TABS.length-1)*4) / TABS.length;
             var button = button(TABS[i], layout.left() + i * (size + 4), 42, size, () -> { tab = selected; page = 0; rebuildWidgets(); });
             button.active = tab != i;
         }
-        controls = switch (tab) { case 0 -> hudControls(config); case 1 -> modules(config); case 2 -> outlines(config); default -> performance(config); };
+        controls = switch (tab) { case 0 -> hudControls(config); case 1 -> modules(config); case 2 -> outlines(config); case 3 -> structures(config); default -> performance(config); };
         int pages = Math.max(1, (controls.size() + layout.capacity() - 1) / layout.capacity()); page = Math.min(page, pages - 1);
         for (int i = 0; i < layout.capacity() && page * layout.capacity() + i < controls.size(); i++) {
             var control = controls.get(page * layout.capacity() + i); int x = layout.x(i), y = layout.y(i);
@@ -83,8 +83,9 @@ public abstract class EgoXSettingsScreen extends Screen {
             toggle("Biom-Checker", "Kandidaten mit nativen Overworld-/Nether-Biomen prüfen. Standardmäßig OFF; Sammlung ist ein eigener Schalter.", () -> c.autoBiomes, CrackerControl::biomes),
             toggle("Erz-Checker", "Optionale Smaragderz-Kandidatenprüfung. Standardmäßig OFF; Erz-Journal bleibt aktiv.", () -> c.autoOres, CrackerControl::ore),
             toggle("Bedrock-Checker", "Kandidaten anhand beobachteter Vanilla-Übergangsschichten prüfen.", () -> c.bedrockChecker, CrackerControl::bedrock),
+            toggle("Nether-Bedrock-Cracker", "Automatische vollständige 48-Bit-Suche aus Nether-Boden und -Decke. Kann lange dauern; /egox stop bricht ab.", () -> c.autoNetherBedrock, CrackerControl::netherBedrock),
             toggle("Geoden-Checker", "Drusen-Platzierungsbedingungen prüfen; unabhängig von Geoden-Outlines.", () -> c.geodeChecker, CrackerControl::geode),
-            toggle("Dungeon-Checker", "Intakte Dungeon-Bodenmuster zur Kandidatenprüfung verwenden.", () -> c.dungeonChecker, CrackerControl::dungeon),
+            toggle("Dungeon-Checker", "Standardmäßig OFF. Optionaler Musterfilter; Spawner lösen keine Struktursuche mehr aus.", () -> c.dungeonChecker, CrackerControl::dungeon),
             toggle("Struktur-Finder", "Geladene Chunks auf Strukturen prüfen. Neue Scans starten beim Einschalten.", () -> c.finder, v -> { c.finder = v; if (v) StructureScanner.rescan(); }),
             toggle("Biom-Sammlung", "Neue Biom-Proben lokal erfassen. Bereits gespeicherte Daten bleiben erhalten.", () -> c.collectBiomes, v -> c.collectBiomes = v),
             toggle("Zusatzfunde", "Spawner, Vaults und Drusen erfassen und markieren.", () -> c.specialBlocks, v -> { c.specialBlocks = v; if (v) StructureScanner.rescan(); }),
@@ -105,6 +106,13 @@ public abstract class EgoXSettingsScreen extends Screen {
             action("Sparsam: 1 Thread", "Reduzierte parallele Suchlast ab der nächsten Suche.", () -> { c.workers = 1; rebuildWidgets(); }),
             action("Ausgewogen", "Die Hälfte der erkannten logischen Prozessoren, maximal 64.", () -> { c.workers = Math.max(1, Math.min(64, cores / 2)); rebuildWidgets(); }),
             action("Maximale Parallelität", "Ein Worker je logischem Prozessor, maximal 64. Kann FPS und Arbeitsspeicher beeinflussen.", () -> { c.workers = Math.min(64, cores); rebuildWidgets(); }));
+    }
+    private List<Control> structures(EgoXConfig c) {
+        var list = new ArrayList<Control>();
+        for (String id : CrackingStructures.types()) list.add(toggle(id.substring(id.indexOf(':')+1),
+            "Für Seed- und Salt-Suche verwenden. OFF beendet laufende Struktursuchen; Rohdaten und Outlines bleiben erhalten.",
+            () -> !c.disabledCrackingStructures.contains(id), v -> CrackingStructures.set(id,v)));
+        return list;
     }
     private void initEditor() {
         var style = EgoXConfig.get().hudStyle; drag = new HudDragController(style);
@@ -137,9 +145,9 @@ public abstract class EgoXSettingsScreen extends Screen {
         canvas.fill(layout.left()-8, 6, layout.left()+layout.width()+8, 7, 0xFFA9F0E3);
         canvas.text("EGOX | Einstellungen", layout.left(), 14, 0xFFA9F0E3, layout.width());
         canvas.text("HUD, Module und Rechenleistung", layout.left(), 27, 0xFFE2EAF2, layout.width());
-        String hint = switch (tab) { case 0 -> "HUD-Vorschau ist auch bei ausgeschaltetem HUD verfügbar."; case 1 -> "ON/OFF wirkt auf das Modul; gespeicherte Daten bleiben erhalten."; case 2 -> "Jeder Typ hat einen eigenen Sichtbarkeitsschalter."; default -> Runtime.getRuntime().availableProcessors()+" logische Prozessoren | Änderungen ab nächster Suche"; };
+        String hint = switch (tab) { case 0 -> "HUD-Vorschau ist auch bei ausgeschaltetem HUD verfügbar."; case 1 -> "ON/OFF wirkt auf das Modul; gespeicherte Daten bleiben erhalten."; case 2 -> "Jeder Typ hat einen eigenen Sichtbarkeitsschalter."; case 3 -> "Für Cracken verwenden | Trial Chambers standardmäßig OFF"; default -> Runtime.getRuntime().availableProcessors()+" logische Prozessoren | Änderungen ab nächster Suche"; };
         canvas.text(hint, layout.left(), height-80, 0xFFE2EAF2, layout.width());
-        canvas.text(tab==3 ? "Biom-/Feature-Fallbacks nutzen höchstens zwei Such-Threads." : "Änderungen werden beim Verlassen gespeichert.", layout.left(), height-69, 0xFFB5C7D8, layout.width());
+        canvas.text(tab==4 ? "Biom-/Feature-Fallbacks nutzen höchstens zwei Such-Threads." : "Änderungen werden beim Verlassen gespeichert.", layout.left(), height-69, 0xFFB5C7D8, layout.width());
         int pages = Math.max(1, (controls.size()+layout.capacity()-1)/layout.capacity());
         canvas.text((page+1)+" / "+pages, width/2-14, height-48, 0xFFE2EAF2, 40);
     }

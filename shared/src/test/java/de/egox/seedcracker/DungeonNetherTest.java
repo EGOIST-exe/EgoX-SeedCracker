@@ -151,7 +151,7 @@ class DungeonNetherTest {
                 assertTrue(DungeonEvidence.add(room));
                 assertFalse(DungeonEvidence.add(new DungeonObservation(room.x(), room.y(), room.z(), room.layouts(), "rescan")));
             }
-            assertEquals(100, DungeonEvidence.snapshot().size()); assertEquals(before+100, AutoCracker.dataRevision());
+            assertEquals(100, DungeonEvidence.snapshot().size()); assertEquals(before, AutoCracker.dataRevision());
             var summary = DungeonEvidence.summarize(DungeonEvidence.snapshot());
             assertEquals(100, summary.rooms()); assertEquals(layout.patternBits()*100, summary.patternBits(), 1e-8);
             assertTrue(summary.compact().contains("Muster-Bits")); assertFalse(summary.describe().contains("+0"));

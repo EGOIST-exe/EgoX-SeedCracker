@@ -76,7 +76,7 @@ public final class StructureScanner {
                     ChunkPos missing = new ChunkPos(Math.floorDiv(point.getX(), 16), Math.floorDiv(point.getZ(), 16));
                     WAITING.computeIfAbsent(missing, k -> new HashSet<>()).add(new ChunkPos(cx, cz));
                     while (WAITING.size() > 4096) WAITING.remove(WAITING.keySet().iterator().next());
-                    return Blocks.AIR;
+                    return null;
                 };
                 if (current.equals("minecraft:overworld") && legacyAnchor(block)) StructureSignatures.detectHit(anchor, block, view).ifPresent(hit ->
                     found(hit.start().type(), hit.start().chunkX(), hit.start().chunkZ(), hit.box(), "Blocksignatur"));

@@ -23,7 +23,10 @@ public final class NativeTemplateFinder {
             BlockPos origin = anchorPos.subtract(anchor().pos());
             BlockPos start = origin.offset(startOffset);
             if ((start.getX() & 15) != 0 || (start.getZ() & 15) != 0) return Optional.empty();
-            for (Mark m : marks) if (view.apply(origin.offset(m.pos())) != m.block()) return Optional.empty();
+            for (Mark m : marks) {
+                Block observed=view.apply(origin.offset(m.pos()));
+                if (observed==null || (m.block()==Blocks.AIR ? !observed.defaultBlockState().isAir() : observed!=m.block())) return Optional.empty();
+            }
             return Optional.of(new Hit(type, Math.floorDiv(start.getX(), 16), Math.floorDiv(start.getZ(), 16),
                 localBox.move(origin.getX(), origin.getY(), origin.getZ()), template));
         }
@@ -159,7 +162,7 @@ public final class NativeTemplateFinder {
             if (!multi.isEmpty()) for (int i = 0; i < multi.size(); i++) palettes.add(multi.getListOrEmpty(i));
             else palettes.add(tag.getListOrEmpty("palette"));
             for (int paletteIndex = 0; paletteIndex < palettes.size(); paletteIndex++) {
-            var stable = new ArrayList<Mark>(); var starts = new ArrayList<BlockPos>();
+            var stable = new ArrayList<Mark>(); var spaces = new ArrayList<Mark>(); var starts = new ArrayList<BlockPos>();
             for (var entry : tag.getListOrEmpty("blocks").compoundStream().toList()) {
                 int index = entry.getIntOr("state", -1);
                 if (index < 0 || index >= palettes.getFirst().size()) continue;
@@ -167,6 +170,7 @@ public final class NativeTemplateFinder {
                 String name = state.getStringOr("id", state.getStringOr("Name", ""));
                 ListTag coordinates = entry.getListOrEmpty("pos");
                 var pos = new BlockPos(coordinates.getIntOr(0, 0), coordinates.getIntOr(1, 0), coordinates.getIntOr(2, 0));
+                if (type.equals("minecraft:trial_chambers") && Set.of("minecraft:air","minecraft:cave_air").contains(name)) spaces.add(new Mark(pos,Blocks.AIR));
                 if (name.equals("minecraft:jigsaw") && namedAnchor != null && entry.getCompoundOrEmpty("nbt").getStringOr("name", "").equals(namedAnchor)) starts.add(pos);
                 if (excluded.contains(name) || UNSTABLE.contains(path(name)) || name.endsWith("_leaves") || name.endsWith("_sapling") || name.contains("copper") || name.contains("candle")) continue;
                 Block block = BuiltInRegistries.BLOCK.getValue(Identifier.parse(name));
@@ -177,7 +181,12 @@ public final class NativeTemplateFinder {
                 stable.add(new Mark(pos, block));
             }
             if (stable.size() < 16 || (namedAnchor != null && starts.isEmpty())) { failures.put(type + "/" + template, "Zu wenige stabile Marker oder Startanker fehlt"); continue; }
-            List<Mark> selected = select(stable, 48);
+            // Trial starts need distributed solids AND expected empty interior, not just a few common tuff blocks.
+            if (type.equals("minecraft:trial_chambers") && (spaces.size()<8 || stable.stream().map(Mark::block).distinct().count()<3)) {
+                failures.put(type+"/"+template,"Zu wenige unabhaengige Innenraum-Merkmale; keine automatische Aufnahme");continue;
+            }
+            List<Mark> selected = new ArrayList<>(select(stable,type.equals("minecraft:trial_chambers")?256:48));
+            if (type.equals("minecraft:trial_chambers")) selected.addAll(select(spaces,24));
             if (namedAnchor == null) starts.add(baseStart);
             for (Rotation rotation : Rotation.values()) {
                 var marks = selected.stream().map(m -> new Mark(StructureTemplate.transform(m.pos(), Mirror.NONE, rotation, pivot), m.block())).toList();
