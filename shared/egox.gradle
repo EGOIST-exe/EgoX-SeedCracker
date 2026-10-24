@@ -3,6 +3,10 @@ sourceSets {
     test.java.srcDir '../../shared/src/test/java'
 }
 repositories { mavenCentral() }
+
+tasks.named('jar', Jar) {
+    from('../../LICENSE')
+}
 dependencies {
     testImplementation platform('org.junit:junit-bom:5.12.2')
     testImplementation 'org.junit.jupiter:junit-jupiter'

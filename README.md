@@ -4,6 +4,8 @@
 
 Eigenständige Fabric-Client-Mod von **EGOIST** für Minecraft Java **1.21.11** und **26.3**.
 
+Lizenz: [MIT](LICENSE) · Copyright © 2026 EGOIST-exe.
+
 [Community Discord](https://discord.gg/FFuMpJg6yj) · [Community Seed-Datenbank](https://docs.google.com/spreadsheets/d/1y7HEf0x_j0Dg6THsi-lTT3T_u0-PdP0Q8SikVPsVacg/edit)
 
 ## Installation
