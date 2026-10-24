@@ -1,0 +1,14 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "de.egox.seedcracker.mixin",
+  "compatibilityLevel": "JAVA_25",
+  "client": [
+    "SeedPacketMixin",
+    "StructureOutlineMixin",
+    "OreBreakMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

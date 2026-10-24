@@ -1,0 +1,22 @@
+sourceSets {
+    main.java.srcDir '../../shared/src/main/java'
+    test.java.srcDir '../../shared/src/test/java'
+}
+repositories { mavenCentral() }
+dependencies {
+    testImplementation platform('org.junit:junit-bom:5.12.2')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+test {
+    useJUnitPlatform()
+    maxHeapSize = '2G'
+    javaLauncher = javaToolchains.launcherFor {
+        languageVersion = JavaLanguageVersion.of(project.minecraft_version == '1.21.11' ? 21 : 25)
+    }
+    testLogging { events 'passed', 'skipped', 'failed' }
+    if (project.hasProperty('egoxFullRecovery')) {
+        systemProperty 'egox.fullRecovery', 'true'
+        testLogging.showStandardStreams = true
+    }
+}

@@ -1,0 +1,15 @@
+.research/
+.tools/
+.gradle/
+**/.gradle/
+**/build/
+**/run/
+versions/*.zip
+node_modules/
+outputs/
+*.log
+.idea/
+.vscode/
+credentials.properties
+.clasp.json
+dist/

@@ -1,0 +1,4 @@
+// Version builds are independent because Minecraft 1.21.11 needs remapping and 26.3 is unobfuscated.
+tasks.register('helpVersions') {
+    doLast { println 'Run scripts/build.ps1 to build and verify both Minecraft variants.' }
+}

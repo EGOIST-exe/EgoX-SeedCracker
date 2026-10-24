@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "id": "egoxseedcracker",
+  "version": "${version}",
+  "name": "EgoX SeedCracker",
+  "description": "Independent client-side seed recovery, structure salt analysis and native biome validation.",
+  "authors": [
+    "EGOIST"
+  ],
+  "license": "All-Rights-Reserved",
+  "contact": {
+    "sources": "https://github.com/EGOIST-exe/EgoX-SeedCracker",
+    "issues": "https://github.com/EGOIST-exe/EgoX-SeedCracker/issues",
+    "homepage": "https://discord.gg/FFuMpJg6yj"
+  },
+  "icon": "assets/egoxseedcracker/icon.png",
+  "environment": "client",
+  "entrypoints": {
+    "modmenu": ["de.egox.seedcracker.EgoXModMenu"],
+    "client": [
+      "de.egox.seedcracker.EgoX"
+    ]
+  },
+  "mixins": [
+    "egoxseedcracker.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=0.19.5",
+    "minecraft": "26.3",
+    "java": ">=25",
+    "fabric-api": "*"
+  }
+}
