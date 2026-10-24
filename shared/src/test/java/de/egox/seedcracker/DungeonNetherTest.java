@@ -141,4 +141,28 @@ class DungeonNetherTest {
         try { DungeonEvidence.restore(loaded.dungeons()); DungeonEvidence.restore(loaded.dungeons()); assertEquals(1, DungeonEvidence.snapshot().size()); }
         finally { DungeonEvidence.clear(); }
     }
+    @Test void batchDungeonDetectionsStayQuietAndDoNotCountRescansTwice() {
+        // No Minecraft/chat client is initialized: an automatic chat notification would fail here.
+        DungeonEvidence.clear(); long before = AutoCracker.dataRevision();
+        var layout = new DungeonObservation.Layout(2, 2, Collections.nCopies(49, 1));
+        try {
+            for (int i=0;i<100;i++) {
+                var room = new DungeonObservation(i*32, 20, -17, List.of(layout), "first");
+                assertTrue(DungeonEvidence.add(room));
+                assertFalse(DungeonEvidence.add(new DungeonObservation(room.x(), room.y(), room.z(), room.layouts(), "rescan")));
+            }
+            assertEquals(100, DungeonEvidence.snapshot().size()); assertEquals(before+100, AutoCracker.dataRevision());
+            var summary = DungeonEvidence.summarize(DungeonEvidence.snapshot());
+            assertEquals(100, summary.rooms()); assertEquals(layout.patternBits()*100, summary.patternBits(), 1e-8);
+            assertTrue(summary.compact().contains("Muster-Bits")); assertFalse(summary.describe().contains("+0"));
+            assertTrue(summary.describe().contains("Kandidatenfilter"));
+        } finally { DungeonEvidence.clear(); }
+    }
+    @Test void dungeonSummaryKeepsSameChunkPatternsSeparateFromStructureLifting() {
+        var layout = new DungeonObservation.Layout(2, 2, Collections.nCopies(49, 1));
+        var rooms = List.of(new DungeonObservation(0,20,0,List.of(layout),"a"), new DungeonObservation(0,40,0,List.of(layout),"b"));
+        var summary = DungeonEvidence.summarize(rooms);
+        assertEquals(2, summary.rooms()); assertEquals(layout.patternBits(), summary.patternBits(), 1e-8);
+        assertEquals(0, ObservationBits.summarize(List.of()).liftingBits());
+    }
 }

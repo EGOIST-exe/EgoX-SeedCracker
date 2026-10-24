@@ -9,6 +9,10 @@ import java.util.function.Function;
 
 /** Only a complete plausible monster-room floor is admitted; arbitrary spawners remain markers. */
 public final class DungeonEvidence {
+    public record Summary(int rooms, double patternBits) {
+        public String compact() { return String.format(Locale.ROOT, "%d Dungeons | ~%.1f Muster-Bits", rooms, patternBits); }
+        public String describe() { return compact() + " (theoretisch; Welt-Seed-Kandidatenfilter)"; }
+    }
     private static final Map<String, DungeonObservation> ROOMS = new LinkedHashMap<>();
     private DungeonEvidence() { }
     public static Optional<DungeonObservation> detect(BlockPos origin, Function<BlockPos, Block> blocks) {
@@ -42,12 +46,12 @@ public final class DungeonEvidence {
         if (level == null) return;
         detect(pos, p -> level.hasChunkAt(p) ? level.getBlockState(p).getBlock() : null).ifPresent(DungeonEvidence::add);
     }
-    private static synchronized void add(DungeonObservation room) {
+    static synchronized boolean add(DungeonObservation room) {
         var old = ROOMS.put(room.key(), room);
         while (ROOMS.size() > 1024) ROOMS.remove(ROOMS.keySet().iterator().next());
-        if (old != null && old.layouts().equals(room.layouts())) return;
+        if (old != null && old.layouts().equals(room.layouts())) return false;
         SessionLibrary.event("DUNGEON", room); AutoCracker.observationsChanged();
-        EgoXSession.say(String.format(Locale.ROOT, "Dungeon-Floor: %d %d %d | ~%.1f bedingte Muster-Bits | +0 Lifting-Bits", room.x(), room.y(), room.z(), room.patternBits()));
+        return true;
     }
     public static synchronized List<DungeonObservation> snapshot() { return List.copyOf(ROOMS.values()); }
     public static synchronized void clear() { ROOMS.clear(); }
@@ -55,9 +59,10 @@ public final class DungeonEvidence {
         if (rooms != null) rooms.forEach(r -> ROOMS.putIfAbsent(r.key(), r));
         while (ROOMS.size() > 1024) ROOMS.remove(ROOMS.keySet().iterator().next());
     }
-    public static String status() {
-        var rooms = snapshot(); var chunks = new HashMap<String, Double>();
+    public static Summary summarize(Collection<DungeonObservation> rooms) {
+        var chunks = new HashMap<String, Double>();
         rooms.forEach(r -> chunks.merge(r.chunkX() + ":" + r.chunkZ(), r.patternBits(), Math::max));
-        return String.format(Locale.ROOT, "Dungeons: %d intakte Muster | ~%.1f bedingte Muster-Bits | +0 Struktur-Lifting-Bits", rooms.size(), chunks.values().stream().mapToDouble(Double::doubleValue).sum());
+        return new Summary(rooms.size(), chunks.values().stream().mapToDouble(Double::doubleValue).sum());
     }
+    public static String status() { return summarize(snapshot()).describe(); }
 }

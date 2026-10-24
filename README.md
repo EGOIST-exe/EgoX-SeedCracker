@@ -9,7 +9,7 @@ Eigenständige Fabric-Client-Mod von **EGOIST** für Minecraft Java **1.21.11** 
 ## Installation
 
 1. Fabric Loader und die passende Fabric API für deine Minecraft-Version installieren.
-2. Genau eine passende `EgoX-SeedCracker-0.6.0+<Minecraft-Version>.jar` aus `dist/` in den `mods`-Ordner legen. Vorherige SeedCracker-JARs dabei ersetzen.
+2. Genau eine passende `EgoX-SeedCracker-0.6.1+<Minecraft-Version>.jar` aus `dist/` in den `mods`-Ordner legen. Vorherige SeedCracker-JARs dabei ersetzen.
 3. Minecraft starten und eine Welt betreten. `/egox` zeigt die Befehle.
 
 Minecraft 1.21.11 benötigt Java 21 oder neuer. Die 26.3-Fassung benötigt Java 25 oder neuer.
@@ -25,6 +25,8 @@ Minecraft 1.21.11 benötigt Java 21 oder neuer. Die 26.3-Fassung benötigt Java 
 - **Leistung:** 1–64 Such-Threads und Presets für sparsam, ausgewogen, empfohlen oder maximale Parallelität. Mehr Threads können FPS und Speicher belasten und sind nicht automatisch schneller. Die Einstellung ist kein CPU-Prozentlimit und wirkt auf neu gestartete Jobs/Phasen; bereits gestartete Worker behalten ihre Zahl. Die automatischen Biom-/Feature-Fallbacks nutzen höchstens zwei Worker.
 
 Änderungen werden beim Verlassen der Oberfläche gespeichert. Tab/Enter und die native Slider-Tastaturbedienung bleiben nutzbar; Esc speichert und kehrt zurück. Die lokale Bibliothek und vorhandene Beobachtungen bleiben beim Umschalten der Module erhalten. Das Logo in `branding/logo_white.png` ist das unverändert übernommene Projektlogo; `scripts/create-icon.py` kopiert dieselbe PNG in beide Varianten.
+
+Seit 0.6.1 werden Dungeon-Funde ohne einzelne Chat-Nachrichten erfasst. Im HUD-Fußtext und unter `/egox db bits` steht die zusammengefasste Anzahl mit theoretischen **Muster-Bits**. Diese Bedingungen ergänzen die Welt-Seed-Kandidatenprüfung; das Struktur-Lifting-Ziel bleibt separat. Die missverständliche `+0 Lifting-Bits`-Anzeige an Dungeon-Funden entfällt. Speicherung, Restore und Kandidatenprüfung bleiben aktiv.
 
 ## Was die Mod bereits kann
 

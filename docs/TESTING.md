@@ -2,9 +2,11 @@
 
 Stand: 24. Oktober 2026. Beide Varianten werden unabhängig gebaut und getestet; die 1.21.11-Tests laufen mit Java 21, die 26.3-Tests mit Java 25.
 
-Release 0.6.0: **89 Tests je Minecraft-Version, insgesamt 178, ohne Fehler oder übersprungene Tests** mit `-PegoxFullRecovery`. Die fertigen JARs werden zusätzlich auf Mod-ID, Version, Mixin-Datei/-Klassen, optionale Mod-Menu-Anbindung, unveränderte Logo-PNG und fehlende fremde Mod-/Minecraft-Inhalte geprüft. HUD-Vorschauen aus den tatsächlichen Java-Canvas-Zeichenoperationen sind Layoutprüfungen und keine Ingame-Screenshots. Die Bedienung einer gestarteten Minecraft-Clientinstanz ist weiterhin nicht vollständig getestet.
+Release 0.6.1: **91 Tests je Minecraft-Version, insgesamt 182, ohne Fehler oder übersprungene Tests** mit `-PegoxFullRecovery`. Die fertigen JARs werden zusätzlich auf Mod-ID, Version, Mixin-Datei/-Klassen, optionale Mod-Menu-Anbindung, unveränderte Logo-PNG und fehlende fremde Mod-/Minecraft-Inhalte geprüft. HUD-Vorschauen aus den tatsächlichen Java-Canvas-Zeichenoperationen sind Layoutprüfungen und keine Ingame-Screenshots. Die Bedienung einer gestarteten Minecraft-Clientinstanz ist weiterhin nicht vollständig getestet.
 
 Geprüft werden:
+
+- 100 Dungeon-Funde plus Wiederholungsscans ohne initialisierten Chat-Client: Funde bleiben gespeichert, nur neue Muster ändern die Datenrevision. Die Übersicht zeigt positive Muster-Bits ohne die missverständliche `+0`-Anzeige; mehrere Räume desselben Chunks addieren weiterhin höchstens einen Musterwert.
 
 - Alle 32 Kombinationen der fünf HUD-Zeilen an allen vier Positionsecken bei verschiedenen GUI-Breiten und -Höhen: kein Zeichnen außerhalb des Bildschirms, abgeschaltete Zeilen verschwinden, das Panel passt sich an. Ein komplett ausgeschalteter HUD-Inhalt zeichnet nichts.
 - Hintergrund 0 % entfernt alle Glas-, Rahmen- und Schatten-Layer; aktivierte Texte/Balken bleiben erhalten. 100 % enthält eine vollständig deckende Panel-Fläche.

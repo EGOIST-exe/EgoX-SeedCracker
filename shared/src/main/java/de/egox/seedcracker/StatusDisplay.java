@@ -67,7 +67,7 @@ public final class StatusDisplay {
         String biomeDetail = EgoXConfig.get().autoBiomes && !AutomaticBiomes.report().state().equals("BEREIT")
             ? "Biom: " + AutomaticBiomes.report().state() + " | /egox db biomes" : "Theoretische Bits | /egox cracker status";
         var dungeons = DungeonEvidence.snapshot();
-        if (!dungeons.isEmpty()) biomeDetail = dungeons.size() + " Dungeon-Muster | /egox db bits";
+        if (!dungeons.isEmpty()) biomeDetail = DungeonEvidence.summarize(dungeons).compact();
         return new GlassHud.Model(AutoCracker.paused() ? "PAUSE" : "SAMMELT", modes, stats, "Lifting-Daten | " + bits.liftingStarts() + "/5 Starts",
             String.format(Locale.ROOT, "%.1f/44", bits.liftingBits()), biomeDetail, Math.min(1, bits.liftingBits() / 44));
     }

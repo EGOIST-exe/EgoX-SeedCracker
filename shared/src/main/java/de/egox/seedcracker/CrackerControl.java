@@ -35,6 +35,6 @@ public final class CrackerControl {
     }
     public static void dungeon(boolean enabled) {
         EgoXConfig.get().dungeonChecker = enabled; EgoXConfig.save(); if (enabled) AutoCracker.retry();
-        EgoXSession.say("Dungeon-Musterpruefung: " + (enabled ? "ON" : "OFF") + "; keine Struktur-Lifting-Bits.");
+        EgoXSession.say("Dungeon-Musterpruefung: " + (enabled ? "ON" : "OFF") + "; Welt-Seed-Kandidatenfilter.");
     }
 }
